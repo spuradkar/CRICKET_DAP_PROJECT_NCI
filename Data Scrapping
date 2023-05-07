@@ -1,0 +1,310 @@
+
+import bs4 , requests, re
+import numpy as np
+import pandas as pd
+import datetime
+import csv
+
+! python -m pip install pymongo==3.7.2
+
+# Commented out IPython magic to ensure Python compatibility.
+today = str(datetime.datetime.now())[0:10]
+class cricScrap():
+    def __init__(self, min_page, max_page, scraped_date):
+        self.scraped_date = scraped_date
+        self.min_page = min_page
+        self.max_page = max_page
+        
+        self.urls = self.generate_urls()
+        self.soups = self.getHTML()
+        self.cric_table = self.getCricData()
+        
+    def generate_urls(self):
+        urls = []
+        for i in range(self.min_page, self.max_page + 1):
+            urls.append('https://stats.espncricinfo.com/ci/engine/stats/index.html?class=2;home_or_away=1;home_or_away=2;home_or_away=3;page={};template=results;type=team;view=results'.format(i))
+        return urls
+    
+    def getHTML(self):
+        soups = {}
+        for url in self.urls:
+            res = requests.get(url)
+            soups[url] = bs4.BeautifulSoup(res.text)
+        return soups
+    def getCricData(self):
+        fin_df = []
+        for url, soup in self.soups.items():
+            cric_vals = [x.text.split() for x in soup.find_all('tr', {'class' : 'data1'})]
+            dfs = []
+            for d in cric_vals:
+                if len(d) == 10:
+                    df_data = {
+                    'team' : d[0],
+                    'result' : d[1],
+                    'margin' : np.nan,
+                    'br' : np.nan,
+                    'toss' : d[2],
+                    'bat' : d[3],
+                    'opposition' : d[5],
+                    'ground' : d[6],
+                    'date' : d[-1],
+                    'url' : url,
+                    'scrapped_date' : today
+                }
+                    df = pd.DataFrame([df_data])
+                    dfs.append(df)
+                    
+                if len(d) == 12:
+                    df_data = [{
+                    'team' : d[0],
+                    'result' : d[1],
+                    'margin' : ' '.join(d[2:4]),
+                    'br' : np.nan,
+                    'toss' : d[4],
+                    'bat' : d[5],
+                    'opposition' :d[7],
+                    'ground' : d[8],
+                    'date' : d[-1],
+                    'url' : url,
+                    'scrapped_date' : today
+                }]
+                    df = pd.DataFrame(df_data)
+                    dfs.append(df)
+                if len(d) == 14:
+                    df_data = [{
+                    'team' : d[0],
+                    'result' : d[1],
+                    'margin' : ' '.join(d[2:4]),
+                    'br' : d[4],
+                    'toss' : d[5],
+                    'bat' : d[6],
+                    'opposition' : ' '.join(d[8:10]),
+                    'ground' : d[-4],
+                    'date' : d[-1],
+                    'url' : url,
+                    'scrapped_date' : today
+                }]
+                    df = pd.DataFrame(df_data)
+                    dfs.append(df)
+                    
+                if len(d) == 15:
+                    df_data = [{
+                    'team' : d[0],
+                    'result' : d[1],
+                    'margin' : ' '.join(d[2:4]),
+                    'br' : d[4],
+                    'toss' : d[5],
+                    'bat' : d[6],
+                    'opposition' : ' '.join(d[8:10]),
+                    'ground' : d[-4],
+                    'date' : d[-1],
+                    'url' : url,
+                    'scrapped_date' : today
+                }]
+                    df = pd.DataFrame(df_data)
+                    dfs.append(df)
+                if len(d) == 13:
+                    df_data = [{
+                    'team' : d[0],
+                    'result' : d[1],
+                    'margin' : ' '.join(d[2:4]),
+                    'br' : d[4],
+                    'toss' : d[4],
+                    'bat' : d[5],
+                    'opposition' : ' '.join(d[8:9]),
+                    'ground' : d[-4],
+                    'date' : d[-1],
+                    'url' : url,
+                    'scrapped_date' : today
+                }]
+                    df = pd.DataFrame(df_data)
+                    dfs.append(df)
+            fin_df.append(pd.concat(dfs))
+        return pd.concat(fin_df)
+# %time cric = cricScrap(min_page = 1, max_page = 178, scraped_date=today)
+
+import datetime                      
+
+import pymongo
+from pymongo import MongoClient
+uri = 'mongodb://u1kkdrchfjim80tclysv:FeesC2ACNmI7be61RTst@brny4kjelauboxl-mongodb.services.clever-cloud.com:27017/brny4kjelauboxl'
+client = MongoClient( uri )
+
+uri1 = 'https://stats.espncricinfo.com/ci/engine/stats/index.html?class=2;home_or_away=1;home_or_away=2;home_or_away=3;page=%7B%7D;template=results;type=team;view=results'
+
+client = MongoClient( uri )
+
+client.stats
+
+cric.cric_table
+
+cricdf = cric.cric_table
+
+cricdf.head(5)
+
+cricdf.tail(5)
+
+cricdf.shape
+
+cricdf.values
+
+cricdf.value_counts
+
+cricdf.info
+
+cricdf.describe()
+
+cricdf.to_csv('Clean_data.csv', index = False)
+
+cricdf.isnull()
+
+cricdf.isnull().sum()
+
+df = cricdf.drop(['margin','br'], axis=1)
+
+df.head()
+
+df.isnull().sum()
+#Data is cleaned
+
+client.stats
+
+db = client.brny4kjelauboxl
+
+insert_result = collection.insert_one(df)
+
+"""Data Exploration & Visualization"""
+
+import numpy as np
+import pandas as pd
+from statistics import *
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+
+data = cricdf.drop(['margin','br'], axis=1)
+
+data
+
+data.isnull().sum()
+
+df['toss'] = df['toss'].map( {'lost':0, 'won':1,})
+
+df['result'] = df['result'].map( {'lost':0, 'won':1,})
+
+df['bat'] = df['bat'].map( {'1st':1, '2nd':2,})
+
+df = cricdf.drop(['margin','br'], axis=1)
+
+!pip install sweetviz
+
+import sweetviz as sv
+dataset_report = sv.analyze(da_1)
+dataset_report.show_html()
+
+import numpy as np
+import pandas as pd
+
+df_main = pd.read_csv('/content/Clean_data.csv')
+
+!pip install sweetviz
+
+import sweetviz as sv
+dataset_report = sv.analyze(df_main)
+dataset_report.show_html()
+
+from statistics import *
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def team_win_plt(team,X,Hue,title,xlab,ylab):
+    final_df = df_main.loc[df_main['team'] == team]
+    plt.figure(figsize=(20,3), facecolor='w')
+    sns.countplot(x=X,data=final_df,hue=Hue)
+    plt.title(team+"'s " + title, size=30)
+    plt.xlabel(xlab, size=15)
+    plt.ylabel(ylab, size=15)
+    plt.xticks(size=9)
+    plt.yticks(size=9)
+    return plt.show()
+
+team_win_plt("New Zealand","team","result", "Match Win/Lost record","Team","count")
+
+team_win_plt("Afghanistan","team","result","Match Win/Lost record","Team","count")
+
+team_win_plt("India","opposition","team","Match records","Team","count")
+
+team_win_plt("Sri Lanka","team","toss","Toss win/lost records","Team","count")
+
+team_win_plt("Canada","team","toss","Toss win/lost records","Team","count")
+
+team_win_plt("Ireland","team","toss","Toss win/lost records","Team","count")
+
+team_win_plt("West Indies","team","toss","Toss win/lost records","Team","count")
+
+team_win_plt("Pakistan","team","bat","Choosing batting records","Team","count")
+
+team_win_plt("India","team","bat","Choosing batting records","Team","count")
+
+team_win_plt("Australia","team","bat","Choosing batting records","Team","count")
+
+team_win_plt("Ireland","result","bat","record of results while doing batting or bowling first","Team","count")
+
+team_win_plt("India","result","bat","record of results while doing batting or bowling first","Team","count")
+
+team_win_plt("Pakistan","result","bat","record of results while doing batting or bowling first","Team","count")
+
+def groupby(team):
+    group_df = df_main.loc[df_main['team'] == team]
+    grouped_df = group_df.groupby("opposition")
+    grouped_lists = grouped_df["ground"].apply(list)
+    grouped_lists = grouped_lists.reset_index()
+    return grouped_lists
+
+groupby("India")
+
+groupby("Ireland")
+
+def ground_number(team):
+    group_df = df_main.loc[df_main['team'] == team]
+    ground_count = group_df.groupby(["opposition","ground"])["ground"].count()
+    return print(ground_count)
+
+ground_number("Netherlands")
+
+ground_number("Ireland")
+
+ground_number("India")
+
+df_main[(df_main.team == 'India') & (df_main.result == 1.0)]
+
+def ww(te,re):
+    group_df = df_main[(df_main.team == te) & (df_main.result == re)]
+    ground_count = group_df.groupby(["opposition","ground","result"])["ground"].count()
+    return print(ground_count)
+
+ww("Australia",1.0)
+
+ww("Ireland",1.0)
+
+ww("India",1.0)
+
+def g_plot(te,b,X,Hue,title,xlab,ylab):
+    new_df = df_main[(df_main.team == te) & (df_main.br >= b)]
+    plt.figure(figsize=(20,3), facecolor='w')
+    sns.countplot(x=X,data=new_df,hue=Hue)
+    plt.title(te+"'s " + title, size=20)
+    plt.xlabel(xlab, size=10)
+    plt.ylabel(ylab, size=10)
+    plt.xticks(size=8)
+    plt.yticks(size=8)
+    return plt.show()
+
+g_plot("India",50,"team","toss","a","a","a")
+
+g_plot("Ireland",50,"team","toss","a","a","a")
+
+sns.pairplot(df_main, hue='result')
+
+sns.pairplot(df_main.drop(columns='toss'))
